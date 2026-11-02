@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四位數幾 A 幾 B</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background: linear-gradient(135deg, #101827, #263b59);
+    color: #f8fafc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+}
+
+.container {
+    width: 100%;
+    max-width: 520px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 24px;
+    padding: 30px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+}
+
+h1 {
+    text-align: center;
+    margin-top: 0;
+    color: #93c5fd;
+}
+
+.subtitle {
+    text-align: center;
+    color: #cbd5e1;
+    line-height: 1.8;
+}
+
+.rules {
+    background: rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 15px;
+    line-height: 1.9;
+    font-size: 14px;
+    margin: 22px 0;
+}
+
+input {
+    width: 100%;
+    padding: 16px;
+    font-size: 28px;
+    letter-spacing: 12px;
+    text-align: center;
+    border: 2px solid #64748b;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #172033;
+    outline: none;
+}
+
+input:focus {
+    border-color: #60a5fa;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+}
+
+.guess-btn {
+    background: #3b82f6;
+    color: white;
+}
+
+.restart-btn {
+    background: #475569;
+    color: white;
+}
+
+.debug-btn {
+    background: #a78bfa;
+    color: #1e1b4b;
+}
+
+#debugArea {
+    margin-top: 15px;
+    padding: 15px;
+    background: rgba(167,139,250,0.15);
+    border: 1px solid rgba(167,139,250,0.5);
+    border-radius: 12px;
+    text-align: center;
+    display: none;
+}
+
+#debugAnswer {
+    font-size: 28px;
+    letter-spacing: 8px;
+    color: #c4b5fd;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.message {
+    text-align: center;
+    margin-top: 18px;
+    min-height: 28px;
+    font-weight: bold;
+    line-height: 1.6;
+}
+
+.result {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.08);
+    text-align: center;
+    line-height: 1.8;
+}
+
+.result strong {
+    color: #93c5fd;
+    font-size: 25px;
+}
+
+.footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🔢 四位數幾 A 幾 B</h1>
+
+    <p class="subtitle">
+        猜出電腦設定的四位數字！<br>
+        每個數字都不重複，挑戰你的觀察力。
+    </p>
+
+    <div class="rules">
+        <strong>📖 遊戲規則</strong><br>
+        🅰️ A：數字正確，位置也正確。<br>
+        🅱️ B：數字正確，但位置不對。<br>
+        🎯 4A0B：恭喜你，成功猜中答案！<br>
+        ⚠️ 必須輸入四個不重複的數字。
+    </div>
+
+    <input
+        id="guessInput"
+        type="text"
+        inputmode="numeric"
+        maxlength="4"
+        placeholder="0000"
+        autocomplete="off"
+    >
+
+    <button class="guess-btn" id="guessBtn">
+        🚀 送出猜測
+    </button>
+
+    <div class="message" id="message">
+        請輸入四位數字開始遊戲！
+    </div>
+
+    <div class="result" id="result">
+        <div>本局結果</div>
+        <strong>尚未猜測</strong>
+    </div>
+
+    <button class="debug-btn" id="debugBtn">
+        🛠 開啟除錯模式
+    </button>
+
+    <div id="debugArea">
+        <div>目前這一局的真正答案</div>
+        <div id="debugAnswer">----</div>
+    </div>
+
+    <button class="restart-btn" id="restartBtn">
+        🔄 重新開始
+    </button>
+
+    <div class="footer">
+        數位科技概論｜版本一
+    </div>
+
+</div>
+
+<script>
+"use strict";
+
+// 遊戲資料
+let answer = "";
+let gameOver = false;
+let debugMode = false;
+let guessCount = 0;
+
+// 產生四個不重複的隨機數字
+function generateAnswer() {
+    const digits = ["0","1","2","3","4","5","6","7","8","9"];
+
+    for (let i = digits.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [digits[i], digits[j]] = [digits[j], digits[i]];
+    }
+
+    return digits.slice(0, 4).join("");
+}
+
+// 計算 A 和 B
+function calculateAB(guess, secret) {
+    let A = 0;
+    let B = 0;
+
+    for (let i = 0; i < 4; i++) {
+        if (guess[i] === secret[i]) {
+            A++;
+        } else if (secret.includes(guess[i])) {
+            B++;
+        }
+    }
+
+    return { A, B };
+}
+
+// 更新除錯畫面
+function updateDebugDisplay() {
+    const area = document.getElementById("debugArea");
+    const answerDisplay = document.getElementById("debugAnswer");
+    const button = document.getElementById("debugBtn");
+
+    area.style.display = debugMode ? "block" : "none";
+
+    if (debugMode) {
+        answerDisplay.textContent = answer;
+        button.textContent = "🔒 關閉除錯模式";
+    } else {
+        answerDisplay.textContent = "----";
+        button.textContent = "🛠 開啟除錯模式";
+    }
+}
+
+// 顯示訊息
+function showMessage(text, color = "#f8fafc") {
+    const message = document.getElementById("message");
+    message.textContent = text;
+    message.style.color = color;
+}
+
+// 送出猜測
+function submitGuess() {
+    const input = document.getElementById("guessInput");
+    const guess = input.value;
+
+    if (gameOver) {
+        showMessage("本局已經結束，請重新開始！", "#fca5a5");
+        return;
+    }
+
+    // 驗證輸入
+    if (!/^[0-9]{4}$/.test(guess)) {
+        showMessage("請輸入完整的四位數字！", "#fca5a5");
+        return;
+    }
+
+    if (new Set(guess).size !== 4) {
+        showMessage("數字不能重複，例如 1123 不符合規則！", "#fca5a5");
+        return;
+    }
+
+    // 計算結果
+    const result = calculateAB(guess, answer);
+
+    guessCount++;
+
+    document.getElementById("result").innerHTML =
+        "第 " + guessCount + " 次猜測<br>" +
+        "<strong>" + result.A + "A" + result.B + "B</strong>";
+
+    if (result.A === 4) {
+        gameOver = true;
+        showMessage("🎉 恭喜！你成功猜中答案！", "#86efac");
+        input.disabled = true;
+        document.getElementById("guessBtn").disabled = true;
+    } else {
+        showMessage("繼續努力！再試一次。", "#93c5fd");
+    }
+
+    input.value = "";
+}
+
+// 重新開始
+function restartGame() {
+    answer = generateAnswer();
+    gameOver = false;
+    debugMode = false;
+    guessCount = 0;
+
+    const input = document.getElementById("guessInput");
+
+    input.disabled = false;
+    input.value = "";
+
+    document.getElementById("guessBtn").disabled = false;
+
+    document.getElementById("result").innerHTML =
+        "本局結果<br><strong>尚未猜測</strong>";
+
+    showMessage("新的一局開始！請輸入四位數字。");
+
+    updateDebugDisplay();
+}
+
+// 切換除錯模式
+function toggleDebug() {
+    debugMode = !debugMode;
+    updateDebugDisplay();
+}
+
+// 綁定按鈕事件
+document.getElementById("guessBtn")
+    .addEventListener("click", submitGuess);
+
+document.getElementById("restartBtn")
+    .addEventListener("click", restartGame);
+
+document.getElementById("debugBtn")
+    .addEventListener("click", toggleDebug);
+
+// 支援 Enter 送出
+document.getElementById("guessInput")
+    .addEventListener("keydown", function(event) {
+        if (event.key === "Enter") {
+            submitGuess();
+        }
+    });
+
+// 開始第一局
+restartGame();
+
+</script>
+
+</body>
+</html>
